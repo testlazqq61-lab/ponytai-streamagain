@@ -193,6 +193,7 @@ export async function onRequest(context) {
       job.status = String(body.status || job.status);
       job.agent = body.agent || job.agent;
       job.localJobId = body.localJobId || job.localJobId;
+      job.resources = body.resources || job.resources;
       job.updatedAt = new Date().toISOString();
       if (body.message) job.log = [...(job.log || []), String(body.message)].slice(-40);
       await writeJobs(b2, jobs);
@@ -361,6 +362,7 @@ function publicJob(job) {
     startedAt: job.createdAt,
     updatedAt: job.updatedAt,
     agent: job.agent,
+    resources: job.resources || null,
     log: job.log || []
   };
 }

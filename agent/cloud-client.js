@@ -21,12 +21,14 @@ export class CloudClient {
   }
 
   async poll() {
+    const streams = this.manager.list();
     await this.post("/api/agent/heartbeat", {
       name: this.config.cloudAgentName,
       details: {
         videoRoot: this.config.videoRoot,
         ffmpegPath: this.config.ffmpegPath,
-        running: this.manager.list().filter((stream) => stream.status === "running").length
+        running: streams.filter((stream) => stream.status === "running").length,
+        streams
       }
     });
 
@@ -35,6 +37,7 @@ export class CloudClient {
       if (job.status === "queued") await this.startCloudJob(job);
       if (job.status === "stopping") await this.stopCloudJob(job);
     }
+    await this.syncCloudStatuses(streams);
   }
 
   async startCloudJob(job) {
@@ -92,6 +95,28 @@ export class CloudClient {
         updatedAt: new Date().toISOString()
       }
     });
+  }
+
+  async syncCloudStatuses(streams) {
+    const streamsById = new Map(streams.map((stream) => [stream.id, stream]));
+    for (const [cloudId, localId] of this.localByCloud.entries()) {
+      const stream = streamsById.get(localId);
+      if (!stream) {
+        this.localByCloud.delete(cloudId);
+        continue;
+      }
+      await this.post(`/api/agent/jobs/${cloudId}/status`, {
+        status: stream.status,
+        message: "Resource update.",
+        localJobId: localId,
+        resources: stream.resources,
+        agent: {
+          name: this.config.cloudAgentName,
+          updatedAt: new Date().toISOString()
+        }
+      });
+      if (stream.status !== "running") this.localByCloud.delete(cloudId);
+    }
   }
 
   async get(route) {

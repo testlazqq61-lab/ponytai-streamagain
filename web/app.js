@@ -12,7 +12,8 @@ const state = {
     remainingBytes: 5 * 1024 * 1024 * 1024,
     usagePercent: 0
   },
-  agent: null
+  agent: null,
+  agentStreams: []
 };
 
 const elements = {
@@ -100,10 +101,14 @@ async function loadHealth() {
   try {
     const health = await api("/api/health");
     state.agent = health.agent;
+    state.agentStreams = health.agent?.details?.streams || [];
     renderAgent();
+    renderResourceSummary();
   } catch {
     state.agent = null;
+    state.agentStreams = [];
     renderAgent();
+    renderResourceSummary();
   }
 }
 
@@ -479,7 +484,7 @@ function showView(name) {
 
 function renderResourceSummary() {
   if (!elements.resourceSummary) return;
-  const running = state.streams.filter((stream) => stream.status === "running");
+  const running = activeStreamsWithResources();
   if (!running.length) {
     elements.resourceSummary.innerHTML = `
       <div class="resource-card">
@@ -521,11 +526,32 @@ function renderResourceSummary() {
 function combinedHistory() {
   const live = state.streams.map((stream) => ({
     ...stream,
+    resources: stream.resources || findAgentStream(stream)?.resources || null,
     historyAt: stream.startedAt,
     destinationCount: stream.destinations?.length || 0
   }));
   const liveIds = new Set(live.map((item) => item.id));
   return [...live, ...state.history.filter((item) => !liveIds.has(item.id))];
+}
+
+function activeStreamsWithResources() {
+  const cloudStreams = state.streams
+    .filter((stream) => stream.status === "running")
+    .map((stream) => ({
+      ...stream,
+      resources: stream.resources || findAgentStream(stream)?.resources || null
+    }));
+
+  if (cloudStreams.length) return cloudStreams;
+  return state.agentStreams.filter((stream) => stream.status === "running");
+}
+
+function findAgentStream(stream) {
+  return state.agentStreams.find((agentStream) => {
+    return agentStream.id === stream.localJobId
+      || agentStream.title === stream.title
+      || agentStream.file === stream.file;
+  });
 }
 
 function renderResourceLine(item) {

@@ -97,7 +97,9 @@ export class StreamManager {
   buildArgs(file, repeat, destinations) {
     const args = [
       "-hide_banner",
-      "-re"
+      "-re",
+      "-fflags",
+      "+genpts"
     ];
 
     if (repeat) args.push("-stream_loop", "-1");
@@ -110,26 +112,65 @@ export class StreamManager {
       "-map",
       "0:a:0?",
       "-c:v",
-      "copy",
+      "libx264",
+      "-preset",
+      "veryfast",
+      "-profile:v",
+      "main",
+      "-pix_fmt",
+      "yuv420p",
+      "-r",
+      "30",
+      "-g",
+      "60",
+      "-b:v",
+      "2500k",
+      "-maxrate",
+      "2500k",
+      "-bufsize",
+      "5000k",
       "-c:a",
-      "copy",
-      "-f",
-      "tee"
+      "aac",
+      "-b:a",
+      "128k",
+      "-ar",
+      "44100"
     );
 
-    args.push(destinations.map((destination) => `[f=flv]${buildRtmpUrl(destination)}`).join("|"));
+    if (destinations.length === 1) {
+      args.push("-f", "flv", buildRtmpUrl(destinations[0]));
+      return args;
+    }
+
+    args.push(
+      "-f",
+      "tee",
+      destinations.map((destination) => `[f=flv]${escapeTeeUrl(buildRtmpUrl(destination))}`).join("|")
+    );
     return args;
   }
 }
 
 export function buildRtmpUrl(destination) {
   const platform = destination.platform || "rtmp";
-  const serverUrl = String(destination.serverUrl || PLATFORM_SERVERS[platform] || "").trim().replace(/\/+$/g, "");
+  const rawServerUrl = String(destination.serverUrl || PLATFORM_SERVERS[platform] || "").trim();
   const streamKey = String(destination.streamKey || "").trim();
 
-  if (!streamKey) throw new Error("Stream key is required.");
+  if (isFullRtmpUrl(streamKey)) return streamKey;
+  if (isFullRtmpUrl(rawServerUrl) && !streamKey) return rawServerUrl;
+
+  const serverUrl = rawServerUrl.replace(/\/+$/g, "");
   if (!serverUrl) throw new Error("Server URL is required for this destination.");
+  if (!streamKey) throw new Error("Stream key is required.");
   return `${serverUrl}/${streamKey}`;
+}
+
+function isFullRtmpUrl(value) {
+  return /^rtmps?:\/\//i.test(value);
+}
+
+function escapeTeeUrl(value) {
+  return value.replace(/\|/g, "\\|");
 }
 
 function createId() {

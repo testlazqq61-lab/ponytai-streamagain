@@ -8,6 +8,7 @@
     "dev": "node scripts/dev-server.js",
     "agent": "node agent/server.js",
     "start": "node scripts/start-all.js",
+    "tunnel": "powershell -ExecutionPolicy Bypass -File scripts/start-tunnel.ps1",
     "install-startup": "powershell -ExecutionPolicy Bypass -File scripts/install-startup.ps1",
     "uninstall-startup": "powershell -ExecutionPolicy Bypass -File scripts/uninstall-startup.ps1",
     "check": "node scripts/check.js"

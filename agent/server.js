@@ -23,12 +23,27 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
 
     if (req.method === "GET" && url.pathname === "/api/health") {
-      sendJson(res, { ok: true, videoRoot: config.videoRoot, ffmpegPath: config.ffmpegPath });
+      sendJson(res, {
+        ok: true,
+        mode: "local",
+        videoRoot: config.videoRoot,
+        ffmpegPath: config.ffmpegPath,
+        storage: localStorageSummary(),
+        agent: {
+          name: config.cloudAgentName,
+          status: "online",
+          updatedAt: new Date().toISOString(),
+          details: {
+            videoRoot: config.videoRoot,
+            ffmpegPath: config.ffmpegPath
+          }
+        }
+      });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/videos") {
-      sendJson(res, { videos: listVideos(config.videoRoot) });
+      sendJson(res, localStorageSummary());
       return;
     }
 
@@ -60,10 +75,32 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (req.method === "GET" && url.pathname === "/api/history") {
+      sendJson(res, { history: readHistory() });
+      return;
+    }
+
     if (req.method === "POST" && url.pathname === "/api/streams") {
       const body = await readJson(req);
       const file = resolveVideoPath(body.file);
-      sendJson(res, manager.start({ ...body, file }), 201);
+      const started = manager.start({ ...body, file });
+      appendHistory({
+        id: started.id,
+        title: body.title,
+        file: path.basename(file),
+        event: "started",
+        status: "running",
+        historyAt: new Date().toISOString()
+      });
+      sendJson(res, started, 201);
+      return;
+    }
+
+    if (req.method === "DELETE" && url.pathname === "/api/videos") {
+      const key = String(url.searchParams.get("key") || "");
+      const file = resolveVideoPath(key);
+      fs.rmSync(file, { force: true });
+      sendJson(res, { ok: true });
       return;
     }
 
@@ -206,12 +243,46 @@ function sanitizeFileName(name) {
 
 function videoInfo(file) {
   const stat = fs.statSync(file);
+  const relativePath = path.relative(config.videoRoot, file);
   return {
+    key: relativePath,
     name: path.basename(file),
-    relativePath: path.relative(config.videoRoot, file),
+    relativePath,
     size: stat.size,
     updatedAt: stat.mtime.toISOString()
   };
+}
+
+function localStorageSummary() {
+  const videos = listVideos(config.videoRoot);
+  const usedBytes = videos.reduce((sum, video) => sum + video.size, 0);
+  const limitBytes = 5 * 1024 * 1024 * 1024;
+  return {
+    videos,
+    usedBytes,
+    limitBytes,
+    remainingBytes: Math.max(0, limitBytes - usedBytes),
+    usagePercent: Math.round((usedBytes / limitBytes) * 1000) / 10
+  };
+}
+
+function historyPath() {
+  return path.join(config.dataDir, "history.json");
+}
+
+function readHistory() {
+  const target = historyPath();
+  if (!fs.existsSync(target)) return [];
+  try {
+    return JSON.parse(fs.readFileSync(target, "utf8"));
+  } catch {
+    return [];
+  }
+}
+
+function appendHistory(item) {
+  const history = [item, ...readHistory()].slice(0, 200);
+  fs.writeFileSync(historyPath(), JSON.stringify(history, null, 2));
 }
 
 function serveWeb(req, res) {

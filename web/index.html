@@ -16,10 +16,10 @@
         </div>
       </div>
       <nav>
-        <button class="nav-item active" type="button">New live stream</button>
-        <button class="nav-item" type="button">Videos</button>
-        <button class="nav-item" type="button">History</button>
-        <button class="nav-item" type="button">Settings</button>
+        <button class="nav-item active" type="button" data-view-button="stream">New live stream</button>
+        <button class="nav-item" type="button" data-view-button="videos">Videos</button>
+        <button class="nav-item" type="button" data-view-button="history">History</button>
+        <button class="nav-item" type="button" data-view-button="settings">Settings</button>
       </nav>
       <div class="agent-card">
         <span id="agentDot" class="dot"></span>
@@ -51,12 +51,17 @@
         </div>
       </section>
 
+      <section id="offlineNotice" class="notice warning" hidden>
+        <strong>Agent offline</strong>
+        <span>เปิด local agent ก่อนใช้งานจริง: cd D:\antigravity\streamagain แล้วรัน npm.cmd run agent</span>
+      </section>
+
       <section class="notice">
         <strong>Cloudflare ready, local powered</strong>
         <span>หน้าเว็บ deploy ได้ แต่ FFmpeg จะรันจากเครื่องคุณ</span>
       </section>
 
-      <section class="panel">
+      <section class="panel view active" data-view="stream">
         <div class="panel-heading">
           <h1>New Live Stream</h1>
           <button id="addDestinationButton" class="secondary" type="button">+ Add Destination</button>
@@ -90,11 +95,43 @@
         </form>
       </section>
 
-      <section class="panel">
+      <section class="panel view active" data-view="stream">
         <div class="panel-heading">
           <h2>Running Streams</h2>
         </div>
         <div id="streamsList" class="streams-list"></div>
+      </section>
+
+      <section class="panel view" data-view="videos">
+        <div class="panel-heading">
+          <h2>Videos</h2>
+          <label class="upload-button">
+            <input id="videoUploadInput" type="file" accept=".mp4,.mov,.mkv,.webm,.avi,.m4v,video/*">
+            Upload video
+          </label>
+        </div>
+        <div id="videosList" class="streams-list"></div>
+      </section>
+
+      <section class="panel view" data-view="history">
+        <div class="panel-heading">
+          <h2>History</h2>
+          <button id="clearHistoryButton" class="secondary" type="button">Clear</button>
+        </div>
+        <div id="historyList" class="streams-list"></div>
+      </section>
+
+      <section class="panel view" data-view="settings">
+        <div class="panel-heading">
+          <h2>Settings</h2>
+        </div>
+        <form id="settingsForm" class="stream-form">
+          <label>
+            <span>Agent URL</span>
+            <input id="agentUrlInput" name="agentUrl" placeholder="http://localhost:8787">
+          </label>
+          <button class="primary" type="submit">Save settings</button>
+        </form>
       </section>
     </main>
 

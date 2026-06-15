@@ -30,6 +30,15 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (req.method === "POST" && url.pathname === "/api/videos/upload") {
+      const fileName = sanitizeFileName(url.searchParams.get("name") || "");
+      if (!fileName) throw new Error("File name is required.");
+      const target = path.join(config.videoRoot, fileName);
+      await saveRequestBody(req, target);
+      sendJson(res, { ok: true, video: videoInfo(target) }, 201);
+      return;
+    }
+
     if (req.method === "GET" && url.pathname === "/api/streams") {
       sendJson(res, { streams: manager.list() });
       return;
@@ -96,15 +105,7 @@ function listVideos(root) {
   const supported = new Set([".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v"]);
   const files = [];
   walk(root, files, supported);
-  return files.map((file) => {
-    const stat = fs.statSync(file);
-    return {
-      name: path.basename(file),
-      relativePath: path.relative(root, file),
-      size: stat.size,
-      updatedAt: stat.mtime.toISOString()
-    };
-  });
+  return files.map(videoInfo);
 }
 
 function walk(dir, files, supported) {
@@ -128,6 +129,46 @@ function resolveVideoPath(relativePath) {
     throw new Error("Video file does not exist.");
   }
   return fullPath;
+}
+
+function saveRequestBody(req, target) {
+  return new Promise((resolve, reject) => {
+    const output = fs.createWriteStream(target, { flags: "w" });
+    let size = 0;
+
+    req.on("data", (chunk) => {
+      size += chunk.length;
+    });
+    req.pipe(output);
+    req.on("error", reject);
+    output.on("error", reject);
+    output.on("finish", () => {
+      if (size === 0) {
+        fs.rmSync(target, { force: true });
+        reject(new Error("Uploaded file is empty."));
+        return;
+      }
+      resolve();
+    });
+  });
+}
+
+function sanitizeFileName(name) {
+  const cleaned = path.basename(name).replace(/[<>:"/\\|?*\x00-\x1F]/g, "_").trim();
+  const ext = path.extname(cleaned).toLowerCase();
+  const supported = new Set([".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v"]);
+  if (!cleaned || !supported.has(ext)) return "";
+  return cleaned;
+}
+
+function videoInfo(file) {
+  const stat = fs.statSync(file);
+  return {
+    name: path.basename(file),
+    relativePath: path.relative(config.videoRoot, file),
+    size: stat.size,
+    updatedAt: stat.mtime.toISOString()
+  };
 }
 
 function serveWeb(req, res) {

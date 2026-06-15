@@ -179,6 +179,18 @@ nav {
   margin-bottom: 20px;
 }
 
+.notice.warning {
+  background: linear-gradient(135deg, #f59f00, #e03131);
+}
+
+.view {
+  display: none;
+}
+
+.view.active {
+  display: block;
+}
+
 .panel {
   background: #fff;
   border-radius: 8px;
@@ -259,6 +271,22 @@ select {
   padding: 10px 18px;
   background: #fff;
   font-weight: 700;
+}
+
+.upload-button {
+  display: inline-flex;
+  width: auto;
+  grid-template-columns: none;
+  border: 1px solid #b9becb;
+  border-radius: 999px;
+  padding: 10px 18px;
+  background: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.upload-button input {
+  display: none;
 }
 
 .primary {

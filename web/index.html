@@ -16,10 +16,10 @@
         </div>
       </div>
       <nav>
-        <button class="nav-item active" type="button" data-view-button="stream">New live stream</button>
-        <button class="nav-item" type="button" data-view-button="videos">Videos</button>
-        <button class="nav-item" type="button" data-view-button="history">History</button>
-        <button class="nav-item" type="button" data-view-button="settings">Settings</button>
+        <button class="nav-item active" type="button" data-view-button="stream"><span>＋</span> New live stream</button>
+        <button class="nav-item" type="button" data-view-button="videos"><span>▣</span> Videos</button>
+        <button class="nav-item" type="button" data-view-button="history"><span>◴</span> History</button>
+        <button class="nav-item" type="button" data-view-button="settings"><span>⚙</span> Settings</button>
       </nav>
       <div class="agent-card">
         <span id="agentDot" class="dot"></span>
@@ -57,8 +57,8 @@
       </section>
 
       <section class="notice">
-        <strong>Cloudflare ready, local powered</strong>
-        <span>หน้าเว็บ deploy ได้ แต่ FFmpeg จะรันจากเครื่องคุณ</span>
+        <strong>Ready for local rerun</strong>
+        <span>เว็บอยู่บน Cloudflare ส่วน FFmpeg ยิงจากคอมนี้ด้วยโหมด copy เพื่อลด CPU</span>
       </section>
 
       <section class="panel view active" data-view="stream">
@@ -105,18 +105,27 @@
       <section class="panel view" data-view="videos">
         <div class="panel-heading">
           <h2>Videos</h2>
-          <label class="upload-button">
+          <button id="openUploadButton" class="upload-button" type="button">
+            Browse videos
+          </button>
+          <label class="upload-button hidden">
             <input id="videoUploadInput" type="file" accept=".mp4,.mov,.mkv,.webm,.avi,.m4v,video/*">
             Upload video
           </label>
         </div>
-        <div id="videosList" class="streams-list"></div>
+        <div id="videosList" class="library-list"></div>
       </section>
 
       <section class="panel view" data-view="history">
         <div class="panel-heading">
           <h2>History</h2>
           <button id="clearHistoryButton" class="secondary" type="button">Clear</button>
+        </div>
+        <div class="tabs">
+          <button class="tab active" type="button" data-history-filter="all">All</button>
+          <button class="tab" type="button" data-history-filter="running">On-air</button>
+          <button class="tab" type="button" data-history-filter="scheduled">Schedule</button>
+          <button class="tab" type="button" data-history-filter="finished">Finished</button>
         </div>
         <div id="historyList" class="streams-list"></div>
       </section>
@@ -159,6 +168,39 @@
         <menu>
           <button class="primary" value="default" type="submit">Add</button>
         </menu>
+      </form>
+    </dialog>
+
+    <dialog id="uploadDialog" class="dialog">
+      <form id="uploadForm" method="dialog">
+        <div class="dialog-head">
+          <h2>Add video</h2>
+          <button class="ghost" value="cancel" type="submit">×</button>
+        </div>
+        <div class="segmented">
+          <button class="segment active" type="button" data-upload-mode="device">From device</button>
+          <button class="segment" type="button" data-upload-mode="url">From URL</button>
+        </div>
+        <div id="deviceUploadPane" class="drop-zone">
+          <label class="primary file-pick">
+            <input id="dialogVideoInput" type="file" accept=".mp4,.mov,.mkv,.webm,.avi,.m4v,video/*">
+            Select file from device
+          </label>
+          <small>รองรับ MP4, MOV, MKV, WEBM, AVI, M4V</small>
+        </div>
+        <div id="urlUploadPane" class="url-pane hidden">
+          <label>
+            <span>Video URL</span>
+            <input id="videoUrlInput" placeholder="https://example.com/video.mp4">
+          </label>
+          <label>
+            <span>Save as</span>
+            <input id="videoUrlNameInput" placeholder="video.mp4">
+          </label>
+          <menu>
+            <button id="importUrlButton" class="primary" value="default" type="submit">Import URL</button>
+          </menu>
+        </div>
       </form>
     </dialog>
 

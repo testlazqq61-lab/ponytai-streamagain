@@ -83,6 +83,9 @@ nav {
   padding: 14px 20px;
   border-radius: 8px;
   color: #4f5668;
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
 .nav-item.active {
@@ -287,6 +290,123 @@ select {
 
 .upload-button input {
   display: none;
+}
+
+.tabs {
+  display: flex;
+  gap: 34px;
+  margin: -6px 0 22px;
+  border-bottom: 1px solid transparent;
+}
+
+.tab {
+  border: 0;
+  background: transparent;
+  color: #8a90a0;
+  padding: 0 0 10px;
+  cursor: pointer;
+}
+
+.tab.active {
+  color: #171923;
+  border-bottom: 2px solid var(--purple);
+}
+
+.library-list {
+  min-height: 320px;
+  border: 1px solid #eef0f5;
+  border-radius: 8px;
+  background: #fff;
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+
+.empty-state {
+  min-height: 280px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: #8a90a0;
+}
+
+.empty-state strong {
+  display: block;
+  color: #454b59;
+  margin: 12px 0 8px;
+}
+
+.empty-box {
+  width: 86px;
+  height: 66px;
+  border: 2px solid #e3e5eb;
+  border-radius: 8px;
+  transform: perspective(120px) rotateX(14deg);
+  background: linear-gradient(135deg, #fff, #eef0f5);
+  margin: 0 auto;
+}
+
+.segmented {
+  justify-self: center;
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  min-width: 312px;
+  padding: 3px;
+  border-radius: 999px;
+  background: #eef0f6;
+}
+
+.segment {
+  border: 0;
+  border-radius: 999px;
+  min-height: 38px;
+  background: transparent;
+  color: #969baa;
+  cursor: pointer;
+}
+
+.segment.active {
+  background: #fff;
+  color: #171923;
+  box-shadow: 0 4px 12px rgba(20, 24, 36, 0.16);
+}
+
+.drop-zone {
+  min-height: 146px;
+  border: 1px dashed var(--purple);
+  border-radius: 8px;
+  background: #fbf8ff;
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  padding: 28px;
+}
+
+.drop-zone.dragging,
+.library-list.dragging {
+  border-color: #4f46e5;
+  background: #f4f0ff;
+}
+
+.file-pick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  padding: 0 22px;
+}
+
+.file-pick input {
+  display: none;
+}
+
+.url-pane {
+  display: grid;
+  gap: 16px;
+}
+
+.inline-action {
+  margin-top: 24px;
 }
 
 .primary {

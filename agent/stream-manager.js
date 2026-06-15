@@ -110,15 +110,9 @@ export class StreamManager {
       "-map",
       "0:a:0?",
       "-c:v",
-      "libx264",
-      "-preset",
-      "veryfast",
-      "-pix_fmt",
-      "yuv420p",
+      "copy",
       "-c:a",
-      "aac",
-      "-b:a",
-      "128k",
+      "copy",
       "-f",
       "tee"
     );

@@ -7,6 +7,7 @@
 - Cloudflare Pages: โฮสต์หน้าเว็บ control panel
 - เครื่องคุณ: รัน local agent ที่ `http://localhost:8787`
 - FFmpeg: อ่านไฟล์วิดีโอจากโฟลเดอร์ในเครื่อง แล้วส่งไป YouTube, Facebook, Twitch, TikTok หรือ RTMP custom
+- Default stream mode: ใช้ `-c copy` เพื่อส่งไฟล์ออกไปโดยไม่ re-encode ช่วยประหยัด CPU
 
 Cloudflare Pages/Workers ไม่สามารถอ่านไฟล์วิดีโอในคอมคุณโดยตรงและไม่เหมาะกับการรัน FFmpeg ตลอดเวลา ดังนั้นงานสตรีมจริงต้องรันบนเครื่องคุณหรือ VPS ภายหลัง
 
@@ -47,6 +48,28 @@ https://ponytai-streamagain.pages.dev
 ```
 
 ถ้าหน้าเว็บขึ้น `Agent offline` ให้กด refresh หลังจากเปิด local agent แล้ว
+
+## ใช้งานจริงแบบเร็ว
+
+1. เปิด local agent:
+
+```powershell
+cd D:\antigravity\streamagain
+npm.cmd run agent
+```
+
+2. เปิดเว็บ:
+
+```text
+https://ponytai-streamagain.pages.dev
+```
+
+3. ไปหน้า `Videos` แล้วอัพโหลดไฟล์วิดีโอ
+4. กลับหน้า `New live stream`
+5. กด `+ Add Destination` แล้วใส่ stream key
+6. เลือกวิดีโอ แล้วกด `Start Livestream`
+
+หมายเหตุ: โหมด `copy` ต้องใช้ไฟล์ที่แพลตฟอร์มรับได้ เช่น MP4 ที่เป็น H.264 + AAC ถ้าไฟล์ไม่ compatible ให้แปลงไฟล์ก่อน หรือเพิ่ม transcoding preset ภายหลัง
 
 ## หมายเหตุเรื่องความปลอดภัย
 

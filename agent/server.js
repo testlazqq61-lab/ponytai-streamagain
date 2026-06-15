@@ -39,6 +39,20 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (req.method === "POST" && url.pathname === "/api/videos/import-url") {
+      const body = await readJson(req);
+      const sourceUrl = new URL(String(body.url || ""));
+      if (!["http:", "https:"].includes(sourceUrl.protocol)) {
+        throw new Error("Only http and https video URLs are supported.");
+      }
+      const fileName = sanitizeFileName(body.name || path.basename(sourceUrl.pathname));
+      if (!fileName) throw new Error("A supported video file name is required.");
+      const target = path.join(config.videoRoot, fileName);
+      await downloadToFile(sourceUrl, target);
+      sendJson(res, { ok: true, video: videoInfo(target) }, 201);
+      return;
+    }
+
     if (req.method === "GET" && url.pathname === "/api/streams") {
       sendJson(res, { streams: manager.list() });
       return;
@@ -151,6 +165,31 @@ function saveRequestBody(req, target) {
       resolve();
     });
   });
+}
+
+function downloadToFile(sourceUrl, target) {
+  const client = sourceUrl.protocol === "https:" ? import("node:https") : import("node:http");
+  return client.then((module) => new Promise((resolve, reject) => {
+    const output = fs.createWriteStream(target, { flags: "w" });
+    const request = module.get(sourceUrl, (response) => {
+      if (response.statusCode && response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
+        output.close();
+        fs.rmSync(target, { force: true });
+        downloadToFile(new URL(response.headers.location, sourceUrl), target).then(resolve, reject);
+        return;
+      }
+      if (response.statusCode !== 200) {
+        output.close();
+        fs.rmSync(target, { force: true });
+        reject(new Error(`Video URL returned HTTP ${response.statusCode}.`));
+        return;
+      }
+      response.pipe(output);
+    });
+    request.on("error", reject);
+    output.on("error", reject);
+    output.on("finish", resolve);
+  }));
 }
 
 function sanitizeFileName(name) {

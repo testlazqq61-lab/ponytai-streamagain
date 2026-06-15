@@ -35,6 +35,16 @@ elements.historyList = document.querySelector("#historyList");
 elements.clearHistoryButton = document.querySelector("#clearHistoryButton");
 elements.settingsForm = document.querySelector("#settingsForm");
 elements.agentUrlInput = document.querySelector("#agentUrlInput");
+elements.openUploadButton = document.querySelector("#openUploadButton");
+elements.uploadDialog = document.querySelector("#uploadDialog");
+elements.uploadForm = document.querySelector("#uploadForm");
+elements.dialogVideoInput = document.querySelector("#dialogVideoInput");
+elements.deviceUploadPane = document.querySelector("#deviceUploadPane");
+elements.urlUploadPane = document.querySelector("#urlUploadPane");
+elements.videoUrlInput = document.querySelector("#videoUrlInput");
+elements.videoUrlNameInput = document.querySelector("#videoUrlNameInput");
+elements.uploadModeButtons = document.querySelectorAll("[data-upload-mode]");
+elements.historyFilterButtons = document.querySelectorAll("[data-history-filter]");
 
 elements.refreshButton.addEventListener("click", refresh);
 elements.addDestinationButton.addEventListener("click", () => elements.destinationDialog.showModal());
@@ -42,8 +52,19 @@ elements.platformButtons.addEventListener("click", selectPlatform);
 elements.destinationForm.addEventListener("submit", addDestination);
 elements.streamForm.addEventListener("submit", startStream);
 elements.videoUploadInput.addEventListener("change", uploadVideo);
+elements.dialogVideoInput.addEventListener("change", uploadVideo);
+elements.openUploadButton.addEventListener("click", () => elements.uploadDialog.showModal());
+elements.uploadForm.addEventListener("submit", importVideoUrl);
 elements.clearHistoryButton.addEventListener("click", clearHistory);
 elements.settingsForm.addEventListener("submit", saveSettings);
+elements.uploadModeButtons.forEach((button) => {
+  button.addEventListener("click", () => setUploadMode(button.dataset.uploadMode));
+});
+elements.historyFilterButtons.forEach((button) => {
+  button.addEventListener("click", () => setHistoryFilter(button.dataset.historyFilter));
+});
+setupDropUpload(elements.videosList);
+setupDropUpload(elements.deviceUploadPane);
 elements.viewButtons.forEach((button) => {
   button.addEventListener("click", () => showView(button.dataset.viewButton));
 });
@@ -202,7 +223,7 @@ async function startStream(event) {
 }
 
 async function uploadVideo(event) {
-  const file = event.target.files?.[0];
+  const file = event.target?.files?.[0] || event.file;
   if (!file) return;
 
   try {
@@ -217,6 +238,7 @@ async function uploadVideo(event) {
       return data;
     });
     showToast("อัพโหลดวิดีโอแล้ว");
+    elements.uploadDialog.close();
     await loadVideos();
   } catch (error) {
     showToast(error.message);
@@ -225,10 +247,36 @@ async function uploadVideo(event) {
   }
 }
 
+function setupDropUpload(target) {
+  target.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    target.classList.add("dragging");
+  });
+  target.addEventListener("dragleave", () => {
+    target.classList.remove("dragging");
+  });
+  target.addEventListener("drop", (event) => {
+    event.preventDefault();
+    target.classList.remove("dragging");
+    const file = event.dataTransfer?.files?.[0];
+    uploadVideo({ file, target: { value: "" } });
+  });
+}
+
 function renderVideos() {
   elements.videosList.innerHTML = "";
   if (!state.videos.length) {
-    elements.videosList.innerHTML = `<p class="empty">ยังไม่มีวิดีโอ เปิด agent แล้วอัพโหลดไฟล์ หรือวางไฟล์ไว้ในโฟลเดอร์ videos</p>`;
+    elements.videosList.innerHTML = `
+      <div class="empty-state">
+        <div>
+          <div class="empty-box"></div>
+          <strong>No video found</strong>
+          <div>Drag & drop your videos here or hit the Browse videos button.</div>
+          <button class="primary inline-action" type="button" data-empty-upload>Browse videos</button>
+        </div>
+      </div>
+    `;
+    elements.videosList.querySelector("[data-empty-upload]").addEventListener("click", () => elements.uploadDialog.showModal());
     return;
   }
 
@@ -260,7 +308,17 @@ function addHistory(item) {
 function renderHistory() {
   elements.historyList.innerHTML = "";
   if (!state.history.length) {
-    elements.historyList.innerHTML = `<p class="empty">ยังไม่มี history</p>`;
+    elements.historyList.innerHTML = `
+      <div class="empty-state">
+        <div>
+          <div class="empty-box"></div>
+          <strong>No history found</strong>
+          <div>Do you want to create a new live stream?</div>
+          <button class="primary inline-action" type="button" data-new-stream>+ New live stream</button>
+        </div>
+      </div>
+    `;
+    elements.historyList.querySelector("[data-new-stream]").addEventListener("click", () => showView("stream"));
     return;
   }
 
@@ -275,6 +333,47 @@ function renderHistory() {
     `;
     elements.historyList.append(row);
   }
+}
+
+async function importVideoUrl(event) {
+  event.preventDefault();
+  if (elements.urlUploadPane.classList.contains("hidden")) return;
+  const url = elements.videoUrlInput.value.trim();
+  const name = elements.videoUrlNameInput.value.trim();
+  if (!url) {
+    showToast("ใส่ Video URL ก่อน");
+    return;
+  }
+
+  try {
+    showToast("กำลังดึงวิดีโอจาก URL เข้า local agent...");
+    await api("/api/videos/import-url", {
+      method: "POST",
+      body: JSON.stringify({ url, name })
+    });
+    elements.videoUrlInput.value = "";
+    elements.videoUrlNameInput.value = "";
+    elements.uploadDialog.close();
+    showToast("Import วิดีโอแล้ว");
+    await loadVideos();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+function setUploadMode(mode) {
+  elements.uploadModeButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.uploadMode === mode);
+  });
+  elements.deviceUploadPane.classList.toggle("hidden", mode !== "device");
+  elements.urlUploadPane.classList.toggle("hidden", mode !== "url");
+}
+
+function setHistoryFilter(filter) {
+  elements.historyFilterButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.historyFilter === filter);
+  });
+  renderHistory();
 }
 
 function clearHistory() {
